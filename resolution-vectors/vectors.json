@@ -1,0 +1,1210 @@
+{
+ "spec": "NOMOS-SPEC-014",
+ "version": "0.3.0",
+ "note": "Resolution vectors. Each vector is a world (registrars + pins), a query (context + at), and the expected result. Vectors carrying `ablate` are the necessity constructions of the paper's §4: `expect` is the enforced behavior, `expect_ablated` is what an implementation missing exactly that condition answers — the attack succeeding. The C7 ablation judges membership at the vector's `ablate_at` (a stale instant) while closures are still judged at the query time; the C8 ablation reads no closure, no closure contents and no view age. Under any other single ablation an attack vector's `expect_ablated` must NOT be produced. Scope predicates are SPEC-008 conditions; `always` covers everything.",
+ "vectors": [
+  {
+   "id": "resolved-single",
+   "description": "One pinned registrar, one in-force claim covering the context, fresh closure: RESOLVED with the one member.",
+   "world": {
+    "pins": [
+     "platform"
+    ],
+    "registrars": {
+     "platform": {
+      "id": "platform",
+      "certified_scope": "always",
+      "claims": [
+       {
+        "authority": "policy-p",
+        "scope": "always"
+       }
+      ],
+      "closures": [
+       {
+        "scope": "always",
+        "authorities": [
+         "policy-p"
+        ],
+        "at": "2026-11-01T00:00:00Z"
+       }
+      ]
+     }
+    }
+   },
+   "query": {
+    "context": {
+     "jurisdiction": "AE"
+    },
+    "at": "2026-11-11T00:00:00Z"
+   },
+   "expect": {
+    "status": "RESOLVED",
+    "authorities": [
+     "policy-p"
+    ]
+   }
+  },
+  {
+   "id": "resolved-empty-under-closure",
+   "description": "A claim whose scope is FALSE on the context, under fresh closure: RESOLVED and EMPTY — provably no law applies within the pinned regime. Absence is load-bearing only because closure covers the query.",
+   "world": {
+    "pins": [
+     "platform"
+    ],
+    "registrars": {
+     "platform": {
+      "id": "platform",
+      "certified_scope": "always",
+      "claims": [
+       {
+        "authority": "eu-only",
+        "scope": "jurisdiction == \"EU\""
+       }
+      ],
+      "closures": [
+       {
+        "scope": "always",
+        "authorities": [
+         "eu-only"
+        ],
+        "at": "2026-11-01T00:00:00Z"
+       }
+      ]
+     }
+    }
+   },
+   "query": {
+    "context": {
+     "jurisdiction": "US"
+    },
+    "at": "2026-11-11T00:00:00Z"
+   },
+   "expect": {
+    "status": "RESOLVED",
+    "authorities": []
+   }
+  },
+  {
+   "id": "resolved-recognition-walk",
+   "description": "The pinned registrar recognizes a second one over the EU scope; the second's claim joins the set. DNS delegation, carrying law.",
+   "world": {
+    "pins": [
+     "platform"
+    ],
+    "registrars": {
+     "platform": {
+      "id": "platform",
+      "certified_scope": "always",
+      "claims": [
+       {
+        "authority": "policy-p",
+        "scope": "always"
+       }
+      ],
+      "closures": [
+       {
+        "scope": "always",
+        "authorities": [
+         "policy-p"
+        ],
+        "at": "2026-11-01T00:00:00Z"
+       }
+      ],
+      "recognitions": [
+       {
+        "to": "eu-reg",
+        "scope": "jurisdiction == \"EU\""
+       }
+      ]
+     },
+     "eu-reg": {
+      "id": "eu-reg",
+      "certified_scope": "jurisdiction == \"EU\"",
+      "claims": [
+       {
+        "authority": "eu-ai-act",
+        "scope": "sector == \"ai\""
+       }
+      ],
+      "closures": [
+       {
+        "scope": "jurisdiction == \"EU\"",
+        "authorities": [
+         "eu-ai-act"
+        ],
+        "at": "2026-11-05T00:00:00Z"
+       }
+      ]
+     }
+    }
+   },
+   "query": {
+    "context": {
+     "jurisdiction": "EU",
+     "sector": "ai"
+    },
+    "at": "2026-11-11T00:00:00Z"
+   },
+   "expect": {
+    "status": "RESOLVED",
+    "authorities": [
+     "eu-ai-act",
+     "policy-p"
+    ]
+   }
+  },
+  {
+   "id": "recognition-scope-false-not-walked",
+   "description": "A recognition edge whose scope is FALSE on the context is not followed: the US query never reaches the EU registrar, and needs no closure from it.",
+   "world": {
+    "pins": [
+     "platform"
+    ],
+    "registrars": {
+     "platform": {
+      "id": "platform",
+      "certified_scope": "always",
+      "claims": [
+       {
+        "authority": "policy-p",
+        "scope": "always"
+       }
+      ],
+      "closures": [
+       {
+        "scope": "always",
+        "authorities": [
+         "policy-p"
+        ],
+        "at": "2026-11-01T00:00:00Z"
+       }
+      ],
+      "recognitions": [
+       {
+        "to": "eu-reg",
+        "scope": "jurisdiction == \"EU\""
+       }
+      ]
+     },
+     "eu-reg": {
+      "id": "eu-reg",
+      "certified_scope": "jurisdiction == \"EU\"",
+      "claims": [
+       {
+        "authority": "eu-ai-act",
+        "scope": "always"
+       }
+      ],
+      "closures": []
+     }
+    }
+   },
+   "query": {
+    "context": {
+     "jurisdiction": "US"
+    },
+    "at": "2026-11-11T00:00:00Z"
+   },
+   "expect": {
+    "status": "RESOLVED",
+    "authorities": [
+     "policy-p"
+    ]
+   }
+  },
+  {
+   "id": "incomplete-missing-context-fact",
+   "description": "A scope needing a context fact the query lacks is UNDECIDED: INCOMPLETE naming the fact, never a guess either way.",
+   "world": {
+    "pins": [
+     "platform"
+    ],
+    "registrars": {
+     "platform": {
+      "id": "platform",
+      "certified_scope": "always",
+      "claims": [
+       {
+        "authority": "eu-only",
+        "scope": "jurisdiction == \"EU\""
+       }
+      ],
+      "closures": [
+       {
+        "scope": "always",
+        "authorities": [
+         "eu-only"
+        ],
+        "at": "2026-11-01T00:00:00Z"
+       }
+      ]
+     }
+    }
+   },
+   "query": {
+    "context": {
+     "sector": "ai"
+    },
+    "at": "2026-11-11T00:00:00Z"
+   },
+   "expect": {
+    "status": "INCOMPLETE",
+    "missing_context_facts": [
+     "jurisdiction"
+    ]
+   }
+  },
+  {
+   "id": "incomplete-unparseable-scope",
+   "description": "A scope nobody can parse holds the resolution open — a malformed predicate must never silently widen or narrow the law.",
+   "world": {
+    "pins": [
+     "platform"
+    ],
+    "registrars": {
+     "platform": {
+      "id": "platform",
+      "certified_scope": "always",
+      "claims": [
+       {
+        "authority": "broken",
+        "scope": "((jurisdiction =="
+       }
+      ],
+      "closures": [
+       {
+        "scope": "always",
+        "authorities": [
+         "broken"
+        ],
+        "at": "2026-11-01T00:00:00Z"
+       }
+      ]
+     }
+    }
+   },
+   "query": {
+    "context": {
+     "jurisdiction": "AE"
+    },
+    "at": "2026-11-11T00:00:00Z"
+   },
+   "expect": {
+    "status": "INCOMPLETE",
+    "missing_context_facts": [
+     "__scope_unparseable__"
+    ]
+   }
+  },
+  {
+   "id": "incomplete-closure-not-covering",
+   "description": "A closure exists but its scope does not cover the queried context: absence of further claims proves nothing there — INCOMPLETE naming the registrar.",
+   "world": {
+    "pins": [
+     "platform"
+    ],
+    "registrars": {
+     "platform": {
+      "id": "platform",
+      "certified_scope": "always",
+      "claims": [
+       {
+        "authority": "policy-p",
+        "scope": "always"
+       }
+      ],
+      "closures": [
+       {
+        "scope": "sector == \"finance\"",
+        "authorities": [
+         "policy-p"
+        ],
+        "at": "2026-11-01T00:00:00Z"
+       }
+      ]
+     }
+    }
+   },
+   "query": {
+    "context": {
+     "sector": "health"
+    },
+    "at": "2026-11-11T00:00:00Z"
+   },
+   "expect": {
+    "status": "INCOMPLETE",
+    "stale_closures": [
+     "platform"
+    ]
+   }
+  },
+  {
+   "id": "conflict-exclusive-claims",
+   "description": "Two registrars, each within certified scope, each claiming the context exclusively: asserted precedence disagrees. CONFLICT, surfaced with both claims — never ordered away by the machine.",
+   "world": {
+    "pins": [
+     "reg-a",
+     "reg-b"
+    ],
+    "registrars": {
+     "reg-a": {
+      "id": "reg-a",
+      "certified_scope": "always",
+      "claims": [
+       {
+        "authority": "law-a",
+        "scope": "sector == \"trade\"",
+        "exclusive": true
+       }
+      ],
+      "closures": [
+       {
+        "scope": "always",
+        "authorities": [
+         "law-a"
+        ],
+        "at": "2026-11-01T00:00:00Z"
+       }
+      ]
+     },
+     "reg-b": {
+      "id": "reg-b",
+      "certified_scope": "always",
+      "claims": [
+       {
+        "authority": "law-b",
+        "scope": "sector == \"trade\"",
+        "exclusive": true
+       }
+      ],
+      "closures": [
+       {
+        "scope": "always",
+        "authorities": [
+         "law-b"
+        ],
+        "at": "2026-11-01T00:00:00Z"
+       }
+      ]
+     }
+    }
+   },
+   "query": {
+    "context": {
+     "sector": "trade"
+    },
+    "at": "2026-11-11T00:00:00Z"
+   },
+   "expect": {
+    "status": "CONFLICT",
+    "conflict_authorities": [
+     "law-a",
+     "law-b"
+    ]
+   }
+  },
+  {
+   "id": "not-yet-in-force",
+   "description": "A claim whose window opens in the future is not in the set today.",
+   "world": {
+    "pins": [
+     "platform"
+    ],
+    "registrars": {
+     "platform": {
+      "id": "platform",
+      "certified_scope": "always",
+      "claims": [
+       {
+        "authority": "future-law",
+        "scope": "always",
+        "from": "2027-01-01T00:00:00Z"
+       },
+       {
+        "authority": "policy-p",
+        "scope": "always"
+       }
+      ],
+      "closures": [
+       {
+        "scope": "always",
+        "authorities": [
+         "policy-p"
+        ],
+        "at": "2026-11-01T00:00:00Z"
+       }
+      ]
+     }
+    }
+   },
+   "query": {
+    "context": {},
+    "at": "2026-11-11T00:00:00Z"
+   },
+   "expect": {
+    "status": "RESOLVED",
+    "authorities": [
+     "policy-p"
+    ]
+   }
+  },
+  {
+   "id": "withdrawn-claim",
+   "description": "A claim whose window has closed is out of the set.",
+   "world": {
+    "pins": [
+     "platform"
+    ],
+    "registrars": {
+     "platform": {
+      "id": "platform",
+      "certified_scope": "always",
+      "claims": [
+       {
+        "authority": "old-law",
+        "scope": "always",
+        "until": "2026-06-30T00:00:00Z"
+       },
+       {
+        "authority": "policy-p",
+        "scope": "always"
+       }
+      ],
+      "closures": [
+       {
+        "scope": "always",
+        "authorities": [
+         "policy-p"
+        ],
+        "at": "2026-11-01T00:00:00Z"
+       }
+      ]
+     }
+    }
+   },
+   "query": {
+    "context": {},
+    "at": "2026-11-11T00:00:00Z"
+   },
+   "expect": {
+    "status": "RESOLVED",
+    "authorities": [
+     "policy-p"
+    ]
+   }
+  },
+  {
+   "id": "revoked-authority-dropped",
+   "description": "A revoked authority leaves the set whatever its claim says.",
+   "world": {
+    "pins": [
+     "platform"
+    ],
+    "registrars": {
+     "platform": {
+      "id": "platform",
+      "certified_scope": "always",
+      "claims": [
+       {
+        "authority": "revoked-law",
+        "scope": "always"
+       },
+       {
+        "authority": "policy-p",
+        "scope": "always"
+       }
+      ],
+      "closures": [
+       {
+        "scope": "always",
+        "authorities": [
+         "policy-p"
+        ],
+        "at": "2026-11-01T00:00:00Z"
+       }
+      ],
+      "revoked": [
+       "revoked-law"
+      ]
+     }
+    }
+   },
+   "query": {
+    "context": {},
+    "at": "2026-11-11T00:00:00Z"
+   },
+   "expect": {
+    "status": "RESOLVED",
+    "authorities": [
+     "policy-p"
+    ]
+   }
+  },
+  {
+   "id": "attack-applicability-hiding",
+   "description": "C5 necessity. The sanctions regime applies but the carrier presents only the permissive policy. Enforced: the relying party resolves the set itself and sanctions-s is in it. Ablated (the set taken from the carrier): the attack succeeds — sanctions-s is simply never consulted. Every artifact involved is genuine.",
+   "ablate": "C5",
+   "presented": [
+    "policy-p"
+   ],
+   "world": {
+    "pins": [
+     "platform"
+    ],
+    "registrars": {
+     "platform": {
+      "id": "platform",
+      "certified_scope": "always",
+      "claims": [
+       {
+        "authority": "policy-p",
+        "scope": "always"
+       },
+       {
+        "authority": "sanctions-s",
+        "scope": "always"
+       }
+      ],
+      "closures": [
+       {
+        "scope": "always",
+        "authorities": [
+         "policy-p",
+         "sanctions-s"
+        ],
+        "at": "2026-11-01T00:00:00Z"
+       }
+      ]
+     }
+    }
+   },
+   "query": {
+    "context": {
+     "jurisdiction": "AE"
+    },
+    "at": "2026-11-11T00:00:00Z"
+   },
+   "expect": {
+    "status": "RESOLVED",
+    "authorities": [
+     "policy-p",
+     "sanctions-s"
+    ]
+   },
+   "expect_ablated": {
+    "status": "RESOLVED",
+    "authorities": [
+     "policy-p"
+    ]
+   }
+  },
+  {
+   "id": "attack-jurisdiction-squatting",
+   "description": "C6 necessity. A genuine registrar certified only for logistics appends a claim over finance. Enforced: outside the certificate, the claim is no claim. Ablated (signatures checked, scope not): the squatted authority lands in strangers' transactions. Under strict combination an added authority can only add refusals: C6 protects against wrongful refusal and foreign law imposed on strangers, never against a wrongful commit (proved: noC6_never_commits_more).",
+   "ablate": "C6",
+   "world": {
+    "pins": [
+     "platform",
+     "trade-reg"
+    ],
+    "registrars": {
+     "platform": {
+      "id": "platform",
+      "certified_scope": "always",
+      "claims": [
+       {
+        "authority": "policy-p",
+        "scope": "always"
+       }
+      ],
+      "closures": [
+       {
+        "scope": "always",
+        "authorities": [
+         "policy-p"
+        ],
+        "at": "2026-11-01T00:00:00Z"
+       }
+      ]
+     },
+     "trade-reg": {
+      "id": "trade-reg",
+      "certified_scope": "sector == \"logistics\"",
+      "claims": [
+       {
+        "authority": "squatted-strict",
+        "scope": "sector == \"finance\""
+       }
+      ],
+      "closures": [
+       {
+        "scope": "always",
+        "authorities": [
+         "squatted-strict"
+        ],
+        "at": "2026-11-01T00:00:00Z"
+       }
+      ]
+     }
+    }
+   },
+   "query": {
+    "context": {
+     "sector": "finance"
+    },
+    "at": "2026-11-11T00:00:00Z"
+   },
+   "expect": {
+    "status": "RESOLVED",
+    "authorities": [
+     "policy-p"
+    ]
+   },
+   "expect_ablated": {
+    "status": "RESOLVED",
+    "authorities": [
+     "policy-p",
+     "squatted-strict"
+    ]
+   }
+  },
+  {
+   "id": "attack-zombie-authority",
+   "description": "C7 necessity. v1 was superseded by the stricter v2 on 5 November; the registrar has not closed again since 1 November, when v1 was the in-force law. Enforced at 11 November: v1 is dropped as superseded, v2 is live but no closure names it, and the 1 November closure names a law no longer in force, so the answer is INCOMPLETE until the registrar closes again. Ablated (membership judged at a stale instant, 2 November, while the closure is judged at 11 November): v1 is live and agrees with the closure, so the dead law answers for today.",
+   "ablate": "C7",
+   "ablate_at": "2026-11-02T00:00:00Z",
+   "world": {
+    "pins": [
+     "platform"
+    ],
+    "registrars": {
+     "platform": {
+      "id": "platform",
+      "certified_scope": "always",
+      "claims": [
+       {
+        "authority": "law-v1",
+        "scope": "always"
+       },
+       {
+        "authority": "law-v2",
+        "scope": "always",
+        "from": "2026-11-05T00:00:00Z"
+       }
+      ],
+      "closures": [
+       {
+        "scope": "always",
+        "authorities": [
+         "law-v1"
+        ],
+        "at": "2026-11-01T00:00:00Z"
+       }
+      ],
+      "supersessions": [
+       {
+        "superseded": "law-v1",
+        "by": "law-v2",
+        "from": "2026-11-05T00:00:00Z"
+       }
+      ]
+     }
+    }
+   },
+   "query": {
+    "context": {},
+    "at": "2026-11-11T00:00:00Z"
+   },
+   "expect": {
+    "status": "INCOMPLETE",
+    "closure_disagreements": [
+     {
+      "registrar": "platform",
+      "authority": "law-v1",
+      "reason": "closed_but_not_claimed"
+     },
+     {
+      "registrar": "platform",
+      "authority": "law-v2",
+      "reason": "claimed_but_not_closed"
+     }
+    ]
+   },
+   "expect_ablated": {
+    "status": "RESOLVED",
+    "authorities": [
+     "law-v1"
+    ]
+   }
+  },
+  {
+   "id": "attack-starved-resolver",
+   "description": "C8 necessity. Nobody lies: the pinned sanctions registrar is simply unreachable. Enforced: INCOMPLETE naming it — silence of a log costs the proposer the verdict. Ablated (answer with what was reachable): the commit proceeds on a quietly smaller world, the same wrong as hiding, achieved without touching the carrier.",
+   "ablate": "C8",
+   "world": {
+    "pins": [
+     "platform",
+     "sanctions-reg"
+    ],
+    "registrars": {
+     "platform": {
+      "id": "platform",
+      "certified_scope": "always",
+      "claims": [
+       {
+        "authority": "policy-p",
+        "scope": "always"
+       }
+      ],
+      "closures": [
+       {
+        "scope": "always",
+        "authorities": [
+         "policy-p"
+        ],
+        "at": "2026-11-01T00:00:00Z"
+       }
+      ]
+     }
+    }
+   },
+   "query": {
+    "context": {},
+    "at": "2026-11-11T00:00:00Z"
+   },
+   "expect": {
+    "status": "INCOMPLETE",
+    "unreachable_registrars": [
+     "sanctions-reg"
+    ]
+   },
+   "expect_ablated": {
+    "status": "RESOLVED",
+    "authorities": [
+     "policy-p"
+    ]
+   }
+  },
+  {
+   "id": "attack-stale-closure",
+   "description": "C8 necessity, freshness arm. The registrar is reachable but its closure is months past its bound: the enumeration may have moved. Enforced: INCOMPLETE. Ablated: yesterday's law answers for today.",
+   "ablate": "C8",
+   "world": {
+    "pins": [
+     "platform"
+    ],
+    "registrars": {
+     "platform": {
+      "id": "platform",
+      "certified_scope": "always",
+      "claims": [
+       {
+        "authority": "policy-p",
+        "scope": "always"
+       }
+      ],
+      "closures": [
+       {
+        "scope": "always",
+        "authorities": [
+         "policy-p"
+        ],
+        "at": "2026-01-01T00:00:00Z",
+        "max_age_days": 30
+       }
+      ]
+     }
+    }
+   },
+   "query": {
+    "context": {},
+    "at": "2026-11-11T00:00:00Z"
+   },
+   "expect": {
+    "status": "INCOMPLETE",
+    "stale_closures": [
+     "platform"
+    ]
+   },
+   "expect_ablated": {
+    "status": "RESOLVED",
+    "authorities": [
+     "policy-p"
+    ]
+   }
+  },
+  {
+   "id": "closure-overlapping-agree",
+   "description": "An honest registrar closes two overlapping scopes: everything, and the EU. Each live claim on the context is named by at least one covering closure and no closure names law the chain does not claim, so closure agreement holds and the set resolves.",
+   "world": {
+    "pins": [
+     "platform"
+    ],
+    "registrars": {
+     "platform": {
+      "id": "platform",
+      "certified_scope": "always",
+      "claims": [
+       {
+        "authority": "policy-p",
+        "scope": "always"
+       },
+       {
+        "authority": "gdpr",
+        "scope": "jurisdiction == \"EU\""
+       }
+      ],
+      "closures": [
+       {
+        "scope": "always",
+        "authorities": [
+         "policy-p"
+        ],
+        "at": "2026-11-01T00:00:00Z"
+       },
+       {
+        "scope": "jurisdiction == \"EU\"",
+        "authorities": [
+         "gdpr"
+        ],
+        "at": "2026-11-01T00:00:00Z"
+       }
+      ]
+     }
+    }
+   },
+   "query": {
+    "context": {
+     "jurisdiction": "EU"
+    },
+    "at": "2026-11-11T00:00:00Z"
+   },
+   "expect": {
+    "status": "RESOLVED",
+    "authorities": [
+     "gdpr",
+     "policy-p"
+    ]
+   }
+  },
+  {
+   "id": "closure-claimed-but-not-closed",
+   "description": "A new law is claimed after the last closure. Until a closure names it, the enumeration the registrar signed is not the one its chain states: INCOMPLETE, naming it.",
+   "world": {
+    "pins": [
+     "platform"
+    ],
+    "registrars": {
+     "platform": {
+      "id": "platform",
+      "certified_scope": "always",
+      "claims": [
+       {
+        "authority": "policy-p",
+        "scope": "always"
+       },
+       {
+        "authority": "new-law",
+        "scope": "always",
+        "from": "2026-11-05T00:00:00Z"
+       }
+      ],
+      "closures": [
+       {
+        "scope": "always",
+        "authorities": [
+         "policy-p"
+        ],
+        "at": "2026-11-01T00:00:00Z"
+       }
+      ]
+     }
+    }
+   },
+   "query": {
+    "context": {},
+    "at": "2026-11-11T00:00:00Z"
+   },
+   "expect": {
+    "status": "INCOMPLETE",
+    "closure_disagreements": [
+     {
+      "registrar": "platform",
+      "authority": "new-law",
+      "reason": "claimed_but_not_closed"
+     }
+    ]
+   }
+  },
+  {
+   "id": "attack-withdrawal-under-closure",
+   "description": "C8 necessity, agreement arm. The sanctions claim is withdrawn on 5 November (a genuine entry, or a compromised key's); the 1 November closure still names sanctions-s and is inside its bound. Enforced: the closure contradicts the chain, INCOMPLETE until the registrar signs a closure without it, so hiding law requires a signed, logged statement. Ablated (closure freshness read, contents ignored, as in 0.1.0): sanctions silently drop out.",
+   "ablate": "C8",
+   "world": {
+    "pins": [
+     "platform"
+    ],
+    "registrars": {
+     "platform": {
+      "id": "platform",
+      "certified_scope": "always",
+      "claims": [
+       {
+        "authority": "policy-p",
+        "scope": "always"
+       },
+       {
+        "authority": "sanctions-s",
+        "scope": "always",
+        "until": "2026-11-05T00:00:00Z"
+       }
+      ],
+      "closures": [
+       {
+        "scope": "always",
+        "authorities": [
+         "policy-p",
+         "sanctions-s"
+        ],
+        "at": "2026-11-01T00:00:00Z"
+       }
+      ]
+     }
+    }
+   },
+   "query": {
+    "context": {},
+    "at": "2026-11-11T00:00:00Z"
+   },
+   "expect": {
+    "status": "INCOMPLETE",
+    "closure_disagreements": [
+     {
+      "registrar": "platform",
+      "authority": "sanctions-s",
+      "reason": "closed_but_not_claimed"
+     }
+    ]
+   },
+   "expect_ablated": {
+    "status": "RESOLVED",
+    "authorities": [
+     "policy-p"
+    ]
+   }
+  },
+  {
+   "id": "attack-stale-view",
+   "description": "C8 necessity, view-freshness arm. The relying party reads a mirrored copy of the chain last refreshed on 20 October; its closure of 1 October is inside its own 90-day bound, but the live log has since moved on. Enforced: the relying party's bound on view age (one hour) is exceeded, INCOMPLETE naming the registrar. Ablated: a month-old copy answers for today.",
+   "ablate": "C8",
+   "world": {
+    "pins": [
+     "platform"
+    ],
+    "max_head_age_seconds": 3600,
+    "registrars": {
+     "platform": {
+      "id": "platform",
+      "certified_scope": "always",
+      "head": "h-oct20",
+      "head_at": "2026-10-20T00:00:00Z",
+      "claims": [
+       {
+        "authority": "sanctions-v1",
+        "scope": "always"
+       }
+      ],
+      "closures": [
+       {
+        "scope": "always",
+        "authorities": [
+         "sanctions-v1"
+        ],
+        "at": "2026-10-01T00:00:00Z"
+       }
+      ]
+     }
+    }
+   },
+   "query": {
+    "context": {},
+    "at": "2026-11-11T00:00:00Z"
+   },
+   "expect": {
+    "status": "INCOMPLETE",
+    "stale_heads": [
+     "platform"
+    ]
+   },
+   "expect_ablated": {
+    "status": "RESOLVED",
+    "authorities": [
+     "sanctions-v1"
+    ]
+   }
+  },
+  {
+   "id": "attack-misdescribed-act",
+   "description": "CF necessity. The claim marks jurisdiction witness-required (class geo); the query carries jurisdiction=QA bare. Enforced: the unverified value may not decide — UNDECIDED, INCOMPLETE naming the fact and class. Ablated (bare values count): the scope reads QA, evaluates FALSE, and the EU law leaves the set with every signature intact — the lie removed the law whose own contract would have demanded the proof.",
+   "ablate": "CF",
+   "world": {
+    "pins": [
+     "platform"
+    ],
+    "registrars": {
+     "platform": {
+      "id": "platform",
+      "certified_scope": "always",
+      "claims": [
+       {
+        "authority": "eu-ai",
+        "scope": "jurisdiction == \"EU\"",
+        "witness_required": {
+         "jurisdiction": "geo"
+        }
+       }
+      ],
+      "closures": [
+       {
+        "scope": "always",
+        "authorities": [
+         "eu-ai"
+        ],
+        "at": "2026-11-01T00:00:00Z"
+       }
+      ]
+     }
+    }
+   },
+   "query": {
+    "context": {
+     "jurisdiction": "QA"
+    },
+    "at": "2026-11-11T00:00:00Z"
+   },
+   "expect": {
+    "status": "INCOMPLETE",
+    "missing_context_facts": [
+     "jurisdiction"
+    ],
+    "unwitnessed": [
+     {
+      "fact": "jurisdiction",
+      "class": "geo"
+     }
+    ]
+   },
+   "expect_ablated": {
+    "status": "RESOLVED",
+    "authorities": []
+   }
+  },
+  {
+   "id": "context-fidelity-witnessed-value-counts",
+   "description": "The same claim, the value attested under the required class: the scope reads it and the law resolves. The stamp, not the say-so, admits the fact.",
+   "world": {
+    "pins": [
+     "platform"
+    ],
+    "registrars": {
+     "platform": {
+      "id": "platform",
+      "certified_scope": "always",
+      "claims": [
+       {
+        "authority": "eu-ai",
+        "scope": "jurisdiction == \"EU\"",
+        "witness_required": {
+         "jurisdiction": "geo"
+        }
+       }
+      ],
+      "closures": [
+       {
+        "scope": "always",
+        "authorities": [
+         "eu-ai"
+        ],
+        "at": "2026-11-01T00:00:00Z"
+       }
+      ]
+     }
+    }
+   },
+   "query": {
+    "context": {
+     "jurisdiction": "EU"
+    },
+    "witnessed": {
+     "jurisdiction": [
+      "geo"
+     ]
+    },
+    "at": "2026-11-11T00:00:00Z"
+   },
+   "expect": {
+    "status": "RESOLVED",
+    "authorities": [
+     "eu-ai"
+    ]
+   }
+  },
+  {
+   "id": "context-fidelity-wrong-class",
+   "description": "Attested, but under a class the claim did not ask for (self-declaration is not geography): still unwitnessed for this claim, still UNDECIDED, still INCOMPLETE naming fact and required class.",
+   "world": {
+    "pins": [
+     "platform"
+    ],
+    "registrars": {
+     "platform": {
+      "id": "platform",
+      "certified_scope": "always",
+      "claims": [
+       {
+        "authority": "eu-ai",
+        "scope": "jurisdiction == \"EU\"",
+        "witness_required": {
+         "jurisdiction": "geo"
+        }
+       }
+      ],
+      "closures": [
+       {
+        "scope": "always",
+        "authorities": [
+         "eu-ai"
+        ],
+        "at": "2026-11-01T00:00:00Z"
+       }
+      ]
+     }
+    }
+   },
+   "query": {
+    "context": {
+     "jurisdiction": "EU"
+    },
+    "witnessed": {
+     "jurisdiction": [
+      "self"
+     ]
+    },
+    "at": "2026-11-11T00:00:00Z"
+   },
+   "expect": {
+    "status": "INCOMPLETE",
+    "missing_context_facts": [
+     "jurisdiction"
+    ],
+    "unwitnessed": [
+     {
+      "fact": "jurisdiction",
+      "class": "geo"
+     }
+    ]
+   }
+  }
+ ]
+}
