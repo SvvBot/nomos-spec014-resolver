@@ -7,6 +7,7 @@ Verifies all 23 vectors in resolution-vectors/vectors.json:
 - Algorithmic performance benchmarking (Variant A vs Variant B)
 """
 
+import hashlib
 import json
 import random
 import sys
@@ -25,6 +26,18 @@ from nomos_resolver import (
 )
 
 VECTORS_FILE = BASE_DIR / "resolution-vectors" / "vectors.json"
+EXPECTED_VECTORS_SHA256 = "d6eda19f779ea2a337a4276cb78ec39a08445ac086680a5f41bdd28196c4f7c8"
+
+
+def test_pinned_vectors_sha256():
+    """Verifies that the test vector suite matches the pinned SHA256 cryptographic digest."""
+    with open(VECTORS_FILE, "rb") as f:
+        digest = hashlib.sha256(f.read()).hexdigest()
+    assert digest == EXPECTED_VECTORS_SHA256, (
+        f"Pinned vector file SHA256 mismatch.\n"
+        f"Expected: {EXPECTED_VECTORS_SHA256}\n"
+        f"Actual:   {digest}"
+    )
 
 
 def load_vectors():
