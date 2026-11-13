@@ -26,13 +26,17 @@ from nomos_resolver import (
 )
 
 VECTORS_FILE = BASE_DIR / "resolution-vectors" / "vectors.json"
-EXPECTED_VECTORS_SHA256 = "d6eda19f779ea2a337a4276cb78ec39a08445ac086680a5f41bdd28196c4f7c8"
+EXPECTED_VECTORS_SHA256 = "7dfd2fca73398f6346c84c7ab90d4076c3b07adf92c4d67b2af6ed7fc7f240bb"
 
 
 def test_pinned_vectors_sha256():
-    """Verifies that the test vector suite matches the pinned SHA256 cryptographic digest."""
+    """
+    Verifies that the test vector suite matches the canonical SHA256 cryptographic digest
+    under LF newline normalization.
+    """
     with open(VECTORS_FILE, "rb") as f:
-        digest = hashlib.sha256(f.read()).hexdigest()
+        content = f.read().replace(b"\r\n", b"\n")
+        digest = hashlib.sha256(content).hexdigest()
     assert digest == EXPECTED_VECTORS_SHA256, (
         f"Pinned vector file SHA256 mismatch.\n"
         f"Expected: {EXPECTED_VECTORS_SHA256}\n"
