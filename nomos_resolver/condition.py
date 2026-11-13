@@ -2,6 +2,13 @@
 NOMOS-SPEC-008 Scope Condition Grammar Evaluator
 Three-valued Kleene logic evaluator for NOMOS conditions.
 Zero-dependency, Python standard library only.
+
+Attribution:
+Adapted from the canonical NOMOS reference evaluator (python/nomosprotocol/act.py
+in https://github.com/nomos-spec/spec) by Safehaven AI Corp. / NOMOS Protocol
+Working Group, licensed under Creative Commons Attribution 4.0 International (CC BY 4.0).
+Per NOMOS-SPEC-014 Issue #33, SPEC-014 resolvers may delegate three-valued condition
+evaluations to conforming SPEC-008 evaluators.
 """
 
 import re

@@ -104,6 +104,15 @@ The test suite validates:
 - Deterministic order invariance across 10 random permutations per vector.
 - Variant performance validation.
 
+## Statement of Method
+
+This implementation was developed independently from the published specification text ([`spec/NOMOS-SPEC-014.md`](https://github.com/nomos-spec/spec/blob/main/spec/NOMOS-SPEC-014.md)) and the normative test suite ([`resolution-vectors/`](https://github.com/nomos-spec/spec/tree/main/resolution-vectors)). The resolution graph traversal, validity windows, cycle detection, closure agreement, head age verification, and context fidelity algorithms in `resolver.py` were designed clean-room with zero reference to any proprietary or reference resolver code. Three-valued predicate evaluation is delegated to `condition.py`, following SPEC-014 Issue #33's explicit permission to reuse conforming SPEC-008 condition evaluators.
+
+## Attribution and Clean-Room Scope
+
+- **Resolver Layer (`nomos_resolver/resolver.py`)**: Clean-room implementation of NOMOS-SPEC-014 Resolution, authored independently by SvvBot and Aegis-1 Systems under the MIT License.
+- **Condition Evaluator (`nomos_resolver/condition.py`)**: Derived from the canonical NOMOS reference evaluator (`python/nomosprotocol/act.py` in `nomos-spec/spec`) by Safehaven AI Corp. / NOMOS Protocol Working Group, used under Creative Commons Attribution 4.0 International (CC BY 4.0).
+
 ## License
 
 MIT License. See [LICENSE](LICENSE) for details.
